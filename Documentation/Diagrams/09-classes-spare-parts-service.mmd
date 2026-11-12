@@ -1,0 +1,105 @@
+---
+title: Spare Parts Service — modèle de données prévu (PostgreSQL)
+---
+classDiagram
+    direction LR
+    class PartCategory {
+        <<Entity>>
+        UUID id
+        String name
+        String description
+    }
+    class SparePart {
+        <<Entity>>
+        UUID id
+        String reference
+        String oemReference
+        String name
+        String brand
+        String description
+        UUID supplierId
+        BigDecimal price
+        String currency
+        PartCondition condition
+        JSONB specifications
+        boolean active
+        Instant createdAt
+        Instant updatedAt
+    }
+    class VehicleCompatibility {
+        <<Entity>>
+        UUID id
+        String brand
+        String model
+        Integer yearFrom
+        Integer yearTo
+        String engine
+    }
+    class Inventory {
+        <<Entity>>
+        UUID id
+        int quantityAvailable
+        int quantityReserved
+        int reorderThreshold
+        String warehouseLocation
+        Instant updatedAt
+    }
+    class PartOrder {
+        <<Entity>>
+        UUID id
+        String orderNumber
+        UUID customerId
+        BigDecimal totalAmount
+        String currency
+        PartOrderStatus status
+        Instant createdAt
+        Instant updatedAt
+    }
+    class PartOrderLine {
+        <<Entity>>
+        UUID id
+        UUID supplierId
+        String partName
+        BigDecimal unitPrice
+        int quantity
+    }
+    class ShippingAddress {
+        <<Embeddable>>
+        String recipientName
+        String phoneNumber
+        String street
+        String city
+        String postalCode
+    }
+    class PartCondition {
+        <<enumeration>>
+        NEW
+        USED
+        REFURBISHED
+    }
+    class PartOrderStatus {
+        <<enumeration>>
+        PENDING
+        CONFIRMED
+        SHIPPED
+        DELIVERED
+        CANCELLED
+    }
+    class ExtBusinessProfile["BusinessProfile (service Profiles)"] {
+        <<référence externe>>
+    }
+    class ExtUserProfile["UserProfile (service Profiles)"] {
+        <<référence externe>>
+    }
+    PartCategory "0..*" --> "0..1" PartCategory : parent
+    SparePart "0..*" --> "1" PartCategory : category
+    SparePart ..> ExtBusinessProfile : supplierId
+    SparePart ..> PartCondition
+    SparePart "1" *-- "0..*" VehicleCompatibility : compatibilities
+    Inventory "0..1" --> "1" SparePart : sparePart
+    PartOrder ..> ExtUserProfile : customerId
+    PartOrder *-- ShippingAddress : shippingAddress
+    PartOrder ..> PartOrderStatus
+    PartOrder "1" *-- "0..*" PartOrderLine : lines
+    PartOrderLine "0..*" --> "1" SparePart : sparePart
+    PartOrderLine ..> ExtBusinessProfile : supplierId

@@ -1,0 +1,90 @@
+---
+title: Profiles & Professionals Service — modèle de données prévu (PostgreSQL + PostGIS)
+---
+classDiagram
+    direction LR
+    class UserProfile {
+        <<Entity>>
+        UUID id
+        String firstName
+        String lastName
+        String email
+        String phoneNumber
+        String city
+        String avatarUrl
+        AccountType accountType
+        Instant createdAt
+        Instant updatedAt
+    }
+    class BusinessType {
+        <<Entity>>
+        UUID id
+        String code
+        String label
+        String description
+    }
+    class BusinessProfile {
+        <<Entity>>
+        UUID id
+        String name
+        String registrationNumber
+        String description
+        String email
+        String phoneNumber
+        String website
+        String logoUrl
+        BusinessStatus status
+        Instant verifiedAt
+        Instant createdAt
+        Instant updatedAt
+    }
+    class ProfessionalProfile {
+        <<Entity>>
+        UUID id
+        String jobTitle
+        BusinessRole businessRole
+        VerificationStatus verificationStatus
+        Instant createdAt
+        Instant updatedAt
+    }
+    class Address {
+        <<Embeddable>>
+        String street
+        String city
+        String postalCode
+        String region
+        String country
+        Point location
+    }
+    class AccountType {
+        <<enumeration>>
+        INDIVIDUAL
+        PROFESSIONAL
+    }
+    class VerificationStatus {
+        <<enumeration>>
+        PENDING
+        VERIFIED
+        REJECTED
+    }
+    class BusinessRole {
+        <<enumeration>>
+        OWNER
+        MANAGER
+        EMPLOYEE
+    }
+    class BusinessStatus {
+        <<enumeration>>
+        PENDING_VERIFICATION
+        ACTIVE
+        SUSPENDED
+        CLOSED
+    }
+    UserProfile ..> AccountType
+    BusinessProfile "0..*" --> "1" BusinessType : businessType
+    BusinessProfile *-- Address : address
+    BusinessProfile ..> BusinessStatus
+    ProfessionalProfile "0..1" --> "1" UserProfile : userProfile
+    ProfessionalProfile "0..*" --> "0..1" BusinessProfile : business
+    ProfessionalProfile ..> BusinessRole
+    ProfessionalProfile ..> VerificationStatus

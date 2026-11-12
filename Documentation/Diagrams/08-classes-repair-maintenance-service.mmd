@@ -1,0 +1,102 @@
+---
+title: Repair & Maintenance Service — modèle de données prévu (PostgreSQL)
+---
+classDiagram
+    direction LR
+    class ServiceCategory {
+        <<Entity>>
+        UUID id
+        String name
+        String description
+    }
+    class GarageService {
+        <<Entity>>
+        UUID id
+        UUID garageId
+        String name
+        String description
+        BigDecimal basePrice
+        String currency
+        Integer estimatedDurationMinutes
+        boolean active
+        Instant createdAt
+        Instant updatedAt
+    }
+    class RepairRequest {
+        <<Entity>>
+        UUID id
+        UUID customerId
+        UUID garageId
+        String problemDescription
+        UrgencyLevel urgency
+        RepairRequestStatus status
+        BigDecimal quotedPrice
+        String currency
+        String garageComment
+        Instant createdAt
+        Instant updatedAt
+    }
+    class MaintenanceAppointment {
+        <<Entity>>
+        UUID id
+        UUID customerId
+        UUID garageId
+        LocalDateTime scheduledAt
+        Integer durationMinutes
+        AppointmentStatus status
+        String notes
+        Instant createdAt
+        Instant updatedAt
+    }
+    class VehicleInfo {
+        <<Embeddable>>
+        String vehicleBrand
+        String vehicleModel
+        Integer vehicleYear
+        String licensePlate
+        Integer mileageKm
+    }
+    class UrgencyLevel {
+        <<enumeration>>
+        LOW
+        MEDIUM
+        HIGH
+    }
+    class RepairRequestStatus {
+        <<enumeration>>
+        SUBMITTED
+        QUOTED
+        ACCEPTED
+        IN_PROGRESS
+        COMPLETED
+        REJECTED
+        CANCELLED
+    }
+    class AppointmentStatus {
+        <<enumeration>>
+        REQUESTED
+        CONFIRMED
+        COMPLETED
+        CANCELLED
+        NO_SHOW
+    }
+    class ExtBusinessProfile["BusinessProfile (service Profiles)"] {
+        <<référence externe>>
+    }
+    class ExtUserProfile["UserProfile (service Profiles)"] {
+        <<référence externe>>
+    }
+    GarageService ..> ExtBusinessProfile : garageId
+    GarageService "0..*" --> "1" ServiceCategory : category
+    RepairRequest ..> ExtUserProfile : customerId
+    RepairRequest ..> ExtBusinessProfile : garageId
+    RepairRequest "0..*" --> "0..1" GarageService : garageService
+    RepairRequest *-- VehicleInfo : vehicle
+    RepairRequest ..> UrgencyLevel
+    RepairRequest ..> RepairRequestStatus
+    MaintenanceAppointment ..> ExtUserProfile : customerId
+    MaintenanceAppointment ..> ExtBusinessProfile : garageId
+    MaintenanceAppointment "0..*" --> "0..1" GarageService : garageService
+    MaintenanceAppointment "0..1" --> "0..1" RepairRequest : repairRequest
+    MaintenanceAppointment *-- VehicleInfo : vehicle
+    MaintenanceAppointment ..> AppointmentStatus

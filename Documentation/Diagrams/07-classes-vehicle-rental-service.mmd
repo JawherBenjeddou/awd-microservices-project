@@ -1,0 +1,134 @@
+---
+title: Vehicle Rental Service — modèle de données prévu (PostgreSQL)
+---
+classDiagram
+    direction LR
+    class RentalVehicle {
+        <<Entity>>
+        UUID id
+        UUID agencyId
+        String brand
+        String model
+        Integer manufactureYear
+        String licensePlate
+        RentalCategory category
+        FuelType fuelType
+        Transmission transmission
+        Integer seats
+        Integer mileageKm
+        RentalVehicleStatus status
+        Instant createdAt
+        Instant updatedAt
+    }
+    class RentalListing {
+        <<Entity>>
+        UUID id
+        String title
+        String description
+        BigDecimal dailyRate
+        BigDecimal weeklyRate
+        BigDecimal monthlyRate
+        BigDecimal depositAmount
+        String currency
+        Integer minRentalDays
+        Integer maxRentalDays
+        String pickupCity
+        String pickupAddress
+        RentalListingStatus status
+        Instant createdAt
+        Instant updatedAt
+    }
+    class RentalPeriod {
+        <<Entity>>
+        UUID id
+        LocalDate startDate
+        LocalDate endDate
+        RentalPeriodType periodType
+        Instant createdAt
+        Instant updatedAt
+    }
+    class Reservation {
+        <<Entity>>
+        UUID id
+        String reference
+        UUID customerId
+        BigDecimal totalPrice
+        BigDecimal depositAmount
+        String currency
+        ReservationStatus status
+        String customerNote
+        Instant createdAt
+        Instant updatedAt
+    }
+    class FuelType {
+        <<enumeration>>
+        PETROL
+        DIESEL
+        HYBRID
+        PLUG_IN_HYBRID
+        ELECTRIC
+        LPG
+    }
+    class Transmission {
+        <<enumeration>>
+        MANUAL
+        AUTOMATIC
+    }
+    class RentalCategory {
+        <<enumeration>>
+        ECONOMY
+        COMPACT
+        SEDAN
+        SUV
+        VAN
+        UTILITY
+        LUXURY
+    }
+    class RentalVehicleStatus {
+        <<enumeration>>
+        ACTIVE
+        IN_MAINTENANCE
+        RETIRED
+    }
+    class RentalListingStatus {
+        <<enumeration>>
+        DRAFT
+        ACTIVE
+        PAUSED
+        SUSPENDED
+        ARCHIVED
+    }
+    class RentalPeriodType {
+        <<enumeration>>
+        RESERVATION
+        MAINTENANCE
+        BLOCKED
+    }
+    class ReservationStatus {
+        <<enumeration>>
+        PENDING
+        CONFIRMED
+        IN_PROGRESS
+        COMPLETED
+        CANCELLED
+        REJECTED
+    }
+    class ExtBusinessProfile["BusinessProfile (service Profiles)"] {
+        <<référence externe>>
+    }
+    class ExtUserProfile["UserProfile (service Profiles)"] {
+        <<référence externe>>
+    }
+    RentalVehicle ..> ExtBusinessProfile : agencyId
+    RentalVehicle ..> RentalCategory
+    RentalVehicle ..> FuelType
+    RentalVehicle ..> Transmission
+    RentalVehicle ..> RentalVehicleStatus
+    RentalListing "0..*" --> "1" RentalVehicle : rentalVehicle
+    RentalListing ..> RentalListingStatus
+    RentalPeriod "0..*" --> "1" RentalVehicle : rentalVehicle
+    RentalPeriod ..> RentalPeriodType
+    Reservation "0..*" --> "1" RentalListing : listing
+    Reservation ..> ExtUserProfile : customerId
+    Reservation "1" *-- "1" RentalPeriod : period
+    Reservation ..> ReservationStatus

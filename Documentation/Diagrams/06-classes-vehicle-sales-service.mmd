@@ -1,0 +1,117 @@
+---
+title: Vehicle Sales Service — modèle de données prévu (PostgreSQL)
+---
+classDiagram
+    direction LR
+    class VehicleCategory {
+        <<Entity>>
+        UUID id
+        String name
+        String description
+    }
+    class Vehicle {
+        <<Entity>>
+        UUID id
+        String brand
+        String model
+        Integer manufactureYear
+        Integer mileageKm
+        FuelType fuelType
+        Transmission transmission
+        VehicleCondition condition
+        String color
+        Integer horsePower
+        Integer engineCapacityCc
+        Integer doors
+        Integer seats
+        String vin
+        Instant createdAt
+        Instant updatedAt
+    }
+    class VehicleImage {
+        <<Entity>>
+        UUID id
+        String url
+        Integer displayOrder
+        boolean mainImage
+    }
+    class VehicleListing {
+        <<Entity>>
+        UUID id
+        String title
+        String description
+        BigDecimal price
+        String currency
+        boolean negotiable
+        ListingStatus status
+        UUID sellerId
+        UUID businessId
+        String city
+        Instant publishedAt
+        Instant soldAt
+        Instant createdAt
+        Instant updatedAt
+    }
+    class PurchaseRequest {
+        <<Entity>>
+        UUID id
+        UUID buyerId
+        BigDecimal offeredPrice
+        String message
+        PurchaseRequestStatus status
+        Instant createdAt
+        Instant updatedAt
+    }
+    class FuelType {
+        <<enumeration>>
+        PETROL
+        DIESEL
+        HYBRID
+        PLUG_IN_HYBRID
+        ELECTRIC
+        LPG
+    }
+    class Transmission {
+        <<enumeration>>
+        MANUAL
+        AUTOMATIC
+    }
+    class VehicleCondition {
+        <<enumeration>>
+        NEW
+        USED
+    }
+    class ListingStatus {
+        <<enumeration>>
+        DRAFT
+        PUBLISHED
+        RESERVED
+        SOLD
+        ARCHIVED
+        SUSPENDED
+    }
+    class PurchaseRequestStatus {
+        <<enumeration>>
+        PENDING
+        ACCEPTED
+        REJECTED
+        CANCELLED
+    }
+    class ExtBusinessProfile["BusinessProfile (service Profiles)"] {
+        <<référence externe>>
+    }
+    class ExtUserProfile["UserProfile (service Profiles)"] {
+        <<référence externe>>
+    }
+    Vehicle ..> FuelType
+    Vehicle ..> Transmission
+    Vehicle ..> VehicleCondition
+    Vehicle "0..*" --> "1" VehicleCategory : category
+    Vehicle "1" *-- "0..*" VehicleImage : images
+    VehicleListing "1" *-- "1" Vehicle : vehicle
+    VehicleListing ..> ListingStatus
+    VehicleListing ..> ExtUserProfile : sellerId
+    VehicleListing ..> ExtBusinessProfile : businessId
+    PurchaseRequest "0..*" --> "1" VehicleListing : listing
+    PurchaseRequest ..> ExtUserProfile : buyerId
+    PurchaseRequest ..> PurchaseRequestStatus
