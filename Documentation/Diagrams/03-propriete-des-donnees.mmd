@@ -1,0 +1,29 @@
+---
+title: AutoWorld — propriété des données (database per service)
+---
+flowchart LR
+    subgraph P1["vehicle-sales-service · Jawher Benjeddou"]
+        D1[("vehicle_sales_db · PostgreSQL<br/>─────────────<br/>vehicle_categories<br/>vehicles<br/>vehicle_images<br/>vehicle_listings<br/>purchase_requests")]
+    end
+    subgraph P2["vehicle-rental-service · Jihen Bjaoui"]
+        D2[("vehicle_rental_db · PostgreSQL<br/>─────────────<br/>rental_vehicles<br/>rental_listings<br/>rental_periods<br/>reservations")]
+    end
+    subgraph P3["repair-maintenance-service · Azmi Ghabi"]
+        D3[("repair_maintenance_db · PostgreSQL<br/>─────────────<br/>service_categories<br/>garage_services<br/>repair_requests<br/>maintenance_appointments")]
+    end
+    subgraph P4["spare-parts-service · Aziz Barhoumi"]
+        D4[("spare_parts_db · PostgreSQL<br/>─────────────<br/>part_categories<br/>spare_parts<br/>vehicle_compatibilities<br/>inventories<br/>part_orders<br/>part_order_lines")]
+    end
+    subgraph P5["profiles-professionals-service · Nader Ayedi"]
+        D5[("profiles_db · PostgreSQL + PostGIS<br/>─────────────<br/>user_profiles<br/>business_types<br/>business_profiles<br/>professional_profiles")]
+    end
+
+    D1 -. "seller_id, buyer_id → user_profiles<br/>business_id → business_profiles" .-> D5
+    D2 -. "customer_id → user_profiles<br/>agency_id → business_profiles" .-> D5
+    D3 -. "customer_id → user_profiles<br/>garage_id → business_profiles" .-> D5
+    D4 -. "customer_id → user_profiles<br/>supplier_id → business_profiles" .-> D5
+
+    classDef db fill:#dcfce7,stroke:#15803d,color:#0f172a
+    classDef geo fill:#ede9fe,stroke:#6d28d9,color:#0f172a
+    class D1,D2,D3,D4 db
+    class D5 geo

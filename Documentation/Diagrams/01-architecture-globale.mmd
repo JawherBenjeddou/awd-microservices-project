@@ -1,0 +1,54 @@
+---
+title: AutoWorld — architecture globale cible
+---
+flowchart TB
+    WEB["Application web Angular<br/>(navigateur)"]
+    KC["Keycloak<br/>authentification OIDC · jetons JWT<br/>(prévu)"]
+    GW["API Gateway<br/>Spring Cloud Gateway · :8080<br/>point d'entrée unique · validation JWT<br/>(prévu)"]
+
+    subgraph INFRA["Infrastructure transverse (prévue)"]
+        direction LR
+        EUR["Eureka<br/>Discovery Server · :8761"]
+        CFG["Config Server<br/>Spring Cloud Config · :8888"]
+        MQ["RabbitMQ<br/>événements asynchrones"]
+    end
+
+    subgraph BUSINESS["5 microservices métier — Spring Boot (initialisés)"]
+        direction LR
+        S1["vehicle-sales-service<br/>:8081<br/><i>Jawher Benjeddou</i>"]
+        S2["vehicle-rental-service<br/>:8082<br/><i>Jihen Bjaoui</i>"]
+        S3["repair-maintenance-service<br/>:8083<br/><i>Azmi Ghabi</i>"]
+        S4["spare-parts-service<br/>:8084<br/><i>Aziz Barhoumi</i>"]
+        S5["profiles-professionals-service<br/>:8085<br/><i>Nader Ayedi</i>"]
+    end
+
+    subgraph DATA["Une base de données par microservice (prévu)"]
+        direction LR
+        D1[("vehicle_sales_db<br/>PostgreSQL")]
+        D2[("vehicle_rental_db<br/>PostgreSQL")]
+        D3[("repair_maintenance_db<br/>PostgreSQL")]
+        D4[("spare_parts_db<br/>PostgreSQL")]
+        D5[("profiles_db<br/>PostgreSQL + PostGIS")]
+    end
+
+    WEB -- "1 · connexion OIDC" --> KC
+    WEB -- "2 · REST/JSON + jeton JWT" --> GW
+    GW -. "clés publiques (JWKS)" .-> KC
+    GW -- "routage /api/**" --> BUSINESS
+    S1 --> D1
+    S2 --> D2
+    S3 --> D3
+    S4 --> D4
+    S5 --> D5
+    BUSINESS -. "enregistrement / découverte" .-> EUR
+    BUSINESS -. "configuration centralisée" .-> CFG
+    BUSINESS <-. "publication / consommation" .-> MQ
+
+    classDef svc fill:#dbeafe,stroke:#1d4ed8,color:#0f172a
+    classDef infra fill:#f1f5f9,stroke:#64748b,color:#0f172a
+    classDef db fill:#dcfce7,stroke:#15803d,color:#0f172a
+    classDef edge fill:#fef3c7,stroke:#b45309,color:#0f172a
+    class S1,S2,S3,S4,S5 svc
+    class EUR,CFG,MQ infra
+    class D1,D2,D3,D4,D5 db
+    class WEB,KC,GW edge

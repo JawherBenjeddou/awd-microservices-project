@@ -1,0 +1,57 @@
+---
+title: AutoWorld — diagramme de déploiement cible (Docker Compose, prévu)
+---
+flowchart TB
+    USER["Navigateur de l'utilisateur"]
+
+    subgraph HOST["Hôte Docker — docker compose · réseau autoworld-net"]
+        direction TB
+        subgraph EDGE["Conteneurs exposés"]
+            direction LR
+            FE["frontend<br/>Nginx + build Angular<br/>:4200"]
+            KC["keycloak<br/>realm autoworld<br/>:8180"]
+            GW["api-gateway<br/>:8080"]
+        end
+        subgraph PLATFORM["Conteneurs d'infrastructure"]
+            direction LR
+            EUR["discovery-server<br/>:8761"]
+            CFG["config-server<br/>:8888"]
+            MQ["rabbitmq<br/>:5672"]
+        end
+        subgraph APPS["Conteneurs des microservices métier"]
+            direction LR
+            S1["vehicle-sales-service<br/>:8081"]
+            S2["vehicle-rental-service<br/>:8082"]
+            S3["repair-maintenance-service<br/>:8083"]
+            S4["spare-parts-service<br/>:8084"]
+            S5["profiles-professionals-service<br/>:8085"]
+        end
+        subgraph DBS["Conteneurs de bases de données (volumes persistants)"]
+            direction LR
+            D1[("sales-db<br/>postgres")]
+            D2[("rental-db<br/>postgres")]
+            D3[("repair-db<br/>postgres")]
+            D4[("parts-db<br/>postgres")]
+            D5[("profiles-db<br/>postgis/postgis")]
+        end
+    end
+
+    USER -- "HTTP :4200" --> FE
+    USER -- "OIDC :8180" --> KC
+    USER -- "API REST :8080" --> GW
+    GW --> APPS
+    S1 --> D1
+    S2 --> D2
+    S3 --> D3
+    S4 --> D4
+    S5 --> D5
+    APPS -.-> PLATFORM
+
+    classDef svc fill:#dbeafe,stroke:#1d4ed8,color:#0f172a
+    classDef infra fill:#f1f5f9,stroke:#64748b,color:#0f172a
+    classDef db fill:#dcfce7,stroke:#15803d,color:#0f172a
+    classDef edge fill:#fef3c7,stroke:#b45309,color:#0f172a
+    class S1,S2,S3,S4,S5 svc
+    class EUR,CFG,MQ infra
+    class D1,D2,D3,D4,D5 db
+    class FE,KC,GW edge
