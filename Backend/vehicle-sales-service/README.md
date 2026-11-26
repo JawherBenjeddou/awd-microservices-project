@@ -114,7 +114,8 @@ classDiagram
 
 ## Endpoints
 
-Base URL: `http://localhost:8081`
+Base URL: `http://localhost:8081`. Swagger UI, to try the endpoints from the browser:
+http://localhost:8081/swagger-ui.html
 
 | Method | Path | What it does | Status codes |
 |--------|------|--------------|--------------|
@@ -263,6 +264,7 @@ Take these with both Eureka servers and both instances (8081 and 8091) running.
 | 7 | Loggers | http://localhost:8081/actuator/loggers |
 | 8 | DB-down test, health `DOWN` | http://localhost:8081/actuator/health |
 | 9 | DB-down test, instances `DOWN` in Eureka | http://localhost:8761/ |
+| 10 | Swagger UI with the 6 endpoints | http://localhost:8081/swagger-ui.html |
 
 DB-down test (screenshots 8 and 9):
 
