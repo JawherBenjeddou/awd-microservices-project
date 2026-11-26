@@ -9,15 +9,22 @@
 | Stack           | Spring Boot 3.5.16, Spring Cloud 2025.0.0, Java 17, Spring Data JPA, Lombok |
 | Package         | `tn.esprit.autoworld.vehiclesales`                           |
 
-A seller creates a listing for a vehicle, publishes it, receives purchase offers, accepts one
-(the listing becomes reserved) and marks it as sold. Users can add listings to their favorites
-and compare up to three of them.
+What this service contains for the workshop:
 
-Not in this version, on purpose: OpenFeign, RabbitMQ, Keycloak and circuit breakers come in later
-workshops. `vendeurId`, `acheteurId` and `userId` are plain ids of profiles owned by MS5; they
-are not checked against MS5 yet.
+- 5 JPA entities with their associations
+- one full CRUD, on sale listings (`AnnonceVente`), with the vehicle saved together with its listing
+- an Eureka client registered on both Eureka servers
+- Spring Boot Actuator: health, info, metrics, loggers
 
-## Data model
+## Entities
+
+| Entity          | Table            | Role |
+|-----------------|------------------|------|
+| `AnnonceVente`  | `annonce_vente`  | A sale listing created by a seller. Owns the CRUD. |
+| `Vehicule`      | `vehicule`       | The vehicle sold by a listing. |
+| `PhotoVehicule` | `photo_vehicule` | A photo of a listing. |
+| `OffreAchat`    | `offre_achat`    | A purchase offer made by a buyer on a listing. |
+| `Favori`        | `favori`         | A listing saved by a user. |
 
 ```mermaid
 classDiagram
@@ -82,80 +89,74 @@ classDiagram
         REFUSEE
         EXPIREE
     }
-    AnnonceVente "1" *-- "1" Vehicule : vehicule (cascade ALL)
-    AnnonceVente "1" *-- "0..*" PhotoVehicule : photos (cascade ALL, orphanRemoval)
-    AnnonceVente "1" o-- "0..*" OffreAchat : offres
-    AnnonceVente "1" o-- "0..*" Favori : favoris
+    AnnonceVente "1" *-- "1" Vehicule : OneToOne
+    AnnonceVente "1" *-- "0..*" PhotoVehicule : OneToMany
+    AnnonceVente "1" *-- "0..*" OffreAchat : OneToMany
+    AnnonceVente "1" *-- "0..*" Favori : OneToMany
     AnnonceVente ..> StatutAnnonce
     Vehicule ..> Carburant
     OffreAchat ..> StatutOffre
 ```
 
+| Association | Mapping | Cascade |
+|-------------|---------|---------|
+| `AnnonceVente` → `Vehicule` | `@OneToOne`, foreign key `vehicule_id` in `annonce_vente` | `ALL` + `orphanRemoval` |
+| `AnnonceVente` → `PhotoVehicule` | `@OneToMany(mappedBy = "annonce")`, `@ManyToOne` on the photo | `ALL` + `orphanRemoval` |
+| `AnnonceVente` → `OffreAchat` | `@OneToMany(mappedBy = "annonce")`, `@ManyToOne` on the offer | `REMOVE` |
+| `AnnonceVente` → `Favori` | `@OneToMany(mappedBy = "annonce")`, `@ManyToOne` on the favorite | `REMOVE` |
+
 - A favorite is unique per `(userId, annonce)`.
-- `vendeurId`, `acheteurId` and `userId` reference MS5 profiles without a foreign key.
-- Offers and favorites are deleted together with their listing.
-- Responses use DTOs, so there is no JSON recursion between a listing and its children.
-
-Listing life cycle:
-
-```mermaid
-stateDiagram-v2
-    [*] --> BROUILLON : POST /api/listings
-    BROUILLON --> PUBLIEE : PUT /publish
-    PUBLIEE --> RESERVEE : an offer is accepted
-    RESERVEE --> VENDUE : PUT /sold
-```
-
-`RETIREE` exists in the enum but no endpoint sets it yet.
+- `vendeurId`, `acheteurId` and `userId` are ids of profiles owned by MS5. They are plain columns,
+  without a foreign key, because each microservice has its own database.
+- Deleting a listing deletes its vehicle, photos, offers and favorites.
+- JSON recursion is avoided with `@JsonIgnore` on the `annonce` back-reference of photos, offers
+  and favorites. There are no DTOs: the controller receives and returns the entity.
 
 ## Endpoints
 
-Base URL: `http://localhost:8081`. Swagger UI: http://localhost:8081/swagger-ui.html
+Base URL: `http://localhost:8081`
 
 | Method | Path | What it does | Status codes |
 |--------|------|--------------|--------------|
-| GET    | `/api/listings/hello` | Message with the port of the instance that answered | 200 |
-| POST   | `/api/listings` | Creates a listing and its vehicle in `BROUILLON` | 201, 400 |
-| GET    | `/api/listings` | Lists listings. Optional filters: `marque`, `prixMin`, `prixMax`, `statut` | 200, 400 |
-| GET    | `/api/listings/{id}` | One listing with its vehicle and photos | 200, 404 |
-| PUT    | `/api/listings/{id}` | Updates the listing and its vehicle (not the status) | 200, 400, 404 |
-| DELETE | `/api/listings/{id}` | Deletes the listing with its vehicle, photos, offers and favorites | 204, 404 |
-| PUT    | `/api/listings/{id}/publish` | `BROUILLON` → `PUBLIEE` | 200, 404, 409 if not `BROUILLON` |
-| POST   | `/api/listings/{id}/photos` | Adds a photo | 201, 400, 404 |
-| POST   | `/api/listings/compare` | Returns up to 3 listings side by side | 200, 400, 404 |
-| POST   | `/api/listings/{id}/offers` | Makes a purchase offer | 201, 400, 404, 409 if the listing is not `PUBLIEE` |
-| PUT    | `/api/offers/{id}/decision` | Accepts or refuses a pending offer | 200, 400, 404, 409 |
-| PUT    | `/api/listings/{id}/sold` | `RESERVEE` → `VENDUE` | 200, 404, 409 if not `RESERVEE` |
-| POST   | `/api/listings/{id}/favorites` | Adds the listing to a user's favorites | 201, 400, 404, 409 if already a favorite |
-| DELETE | `/api/listings/{id}/favorites?userId=` | Removes it from the user's favorites | 204, 400, 404 |
+| POST   | `/api/listings`       | Creates a listing and its vehicle | 201, 400 |
+| GET    | `/api/listings`       | Lists all listings | 200 |
+| GET    | `/api/listings/{id}`  | Returns one listing | 200, 404 |
+| PUT    | `/api/listings/{id}`  | Updates a listing and its vehicle | 200, 400, 404 |
+| DELETE | `/api/listings/{id}`  | Deletes a listing | 204, 404 |
+| GET    | `/api/listings/hello` | Returns a message with the port of the instance that answered | 200 |
 
-Rules worth knowing:
-
-- **Decision on an offer.** The body is `{"decision":"ACCEPTEE"}` or `{"decision":"REFUSEE"}`.
-  Accepting an offer sets the listing to `RESERVEE` and every other pending offer of that listing
-  to `REFUSEE`. Deciding an offer that is no longer `EN_ATTENTE` returns 409.
-- **Photos.** The first photo of a listing becomes its cover (`principale`). Sending
-  `"principale": true` on a later photo moves the cover to it. `ordre` defaults to the next position.
-- **Filters.** `marque` is an exact match, ignoring case. `prixMin` and `prixMax` are inclusive.
-- **Compare.** The body is `{"ids":[1,2,3]}`: 1 to 3 distinct ids.
-
-Errors always have the same JSON shape:
+Request body of POST and PUT:
 
 ```json
 {
-  "timestamp": "2026-11-26T20:01:27",
-  "status": 409,
-  "error": "Conflict",
-  "message": "Listing 4 cannot be published: status is PUBLIEE, expected BROUILLON",
-  "path": "/api/listings/4/publish"
+  "vendeurId": 7,
+  "titre": "Renault Clio 5 - tres bon etat",
+  "description": "Premiere main",
+  "prix": 48500,
+  "negociable": true,
+  "statut": "BROUILLON",
+  "vehicule": {
+    "marque": "Renault",
+    "modele": "Clio 5",
+    "annee": 2020,
+    "kilometrage": 61000,
+    "carburant": "ESSENCE"
+  }
 }
 ```
 
-A validation error (400) adds a `fieldErrors` object with one message per invalid field.
+- Required: `vendeurId`, `titre`, `prix` (greater than 0) and every field of `vehicule`.
+- `statut` is optional and defaults to `BROUILLON`.
+- `id` and `dateCreation` are set by the server. `photos` appears in responses only.
+- Invalid input returns 400 with one message per invalid field; an unknown id returns 404:
+
+```json
+{ "status": 404, "error": "Not Found", "message": "Listing 99 not found" }
+```
 
 ## Run
 
-Start MySQL (XAMPP) and the two Eureka peers first: see
+Start MySQL (XAMPP) and the two Eureka servers first: see
 [../eureka-server/README.md](../eureka-server/README.md).
 
 ```bash
@@ -166,24 +167,19 @@ mvnw.cmd spring-boot:run        # Windows
 
 In IntelliJ, use the shared run configuration **VehicleSales8081** (stored in `.run/`).
 
-At first startup the service creates `sales_db`, creates the tables and inserts 3 sample
-listings (only when the listing table is empty).
-
-Settings that can be overridden with environment variables: `PORT` (default 8081), `DB_USER`
-(default `root`), `DB_PASSWORD` (default empty).
+At first startup the service creates the `sales_db` database and its tables. The tables start
+empty: create a listing with POST.
 
 ## Run two instances
 
-Start the first instance and wait until it is up, then start the second one on port 8091.
-Both instances share the same database.
+Start the first instance, then start a second one on port 8091. Both use the same database.
 
 | Way | How |
 |-----|-----|
 | IntelliJ, shared config | Run **VehicleSales8091** (it sets the VM option `-Dserver.port=8091`) |
-| IntelliJ, by hand | Duplicate the run configuration, then *Modify options → Add VM options* → `-Dserver.port=8091` |
-| Windows cmd | `set PORT=8091&& mvnw.cmd spring-boot:run` |
-| Windows PowerShell | `$env:PORT=8091; .\mvnw.cmd spring-boot:run` |
-| macOS / Linux | `PORT=8091 ./mvnw spring-boot:run` |
+| IntelliJ, by hand | *Run → Edit Configurations*, copy the configuration, then *Modify options → Add VM options* → `-Dserver.port=8091` |
+| Command line, Windows | `mvnw.cmd spring-boot:run -Dspring-boot.run.arguments=--server.port=8091` |
+| Command line, macOS / Linux | `./mvnw spring-boot:run -Dspring-boot.run.arguments=--server.port=8091` |
 
 Check which instance answers:
 
@@ -193,54 +189,51 @@ curl http://localhost:8091/api/listings/hello   # Hello from vehicle-sales-servi
 ```
 
 Both dashboards (http://localhost:8761/ and http://localhost:8762/) then show
-`VEHICLE-SALES-SERVICE` with `vehicle-sales-service:8081` and `vehicle-sales-service:8091`.
-Allow about 30 s for the second dashboard to catch up.
+`VEHICLE-SALES-SERVICE` with two instances: `vehicle-sales-service:8081` and
+`vehicle-sales-service:8091`. Allow about 30 s for both dashboards to show them.
 
 ## curl examples
 
-The JSON bodies are written for macOS / Linux / Git Bash. On Windows cmd, import
-`postman_collection.json` into Postman instead: it covers every endpoint.
+Written for macOS / Linux / Git Bash. On Windows cmd, import `postman_collection.json` into
+Postman instead: it contains the same requests.
 
 ```bash
-# Create a listing (status BROUILLON) -> 201
+# Hello
+curl http://localhost:8081/api/listings/hello
+
+# Create -> 201
 curl -X POST http://localhost:8081/api/listings \
   -H "Content-Type: application/json" \
   -d '{"vendeurId":7,"titre":"Renault Clio 5 - tres bon etat","description":"Premiere main","prix":48500,"negociable":true,"vehicule":{"marque":"Renault","modele":"Clio 5","annee":2020,"kilometrage":61000,"carburant":"ESSENCE"}}'
 
-# List, with and without filters
+# List all -> 200
 curl http://localhost:8081/api/listings
-curl "http://localhost:8081/api/listings?marque=Peugeot&prixMin=50000&prixMax=60000&statut=PUBLIEE"
 
-# Read, update, delete (replace 4 with the id returned by the creation)
-curl http://localhost:8081/api/listings/4
-curl -X PUT http://localhost:8081/api/listings/4 \
+# Get one -> 200, or 404 if the id does not exist
+curl http://localhost:8081/api/listings/1
+
+# Update -> 200
+curl -X PUT http://localhost:8081/api/listings/1 \
   -H "Content-Type: application/json" \
-  -d '{"vendeurId":7,"titre":"Renault Clio 5 - prix revu","description":"Premiere main","prix":47000,"negociable":false,"vehicule":{"marque":"Renault","modele":"Clio 5","annee":2020,"kilometrage":61500,"carburant":"ESSENCE"}}'
-curl -X DELETE http://localhost:8081/api/listings/4
+  -d '{"vendeurId":7,"titre":"Renault Clio 5 - prix revu","description":"Premiere main","prix":47000,"negociable":false,"statut":"PUBLIEE","vehicule":{"marque":"Renault","modele":"Clio 5","annee":2020,"kilometrage":61500,"carburant":"ESSENCE"}}'
 
-# Publish, then add a photo
-curl -X PUT http://localhost:8081/api/listings/4/publish
-curl -X POST http://localhost:8081/api/listings/4/photos \
-  -H "Content-Type: application/json" \
-  -d '{"url":"https://placehold.co/800x600?text=Clio","principale":true}'
-
-# Compare up to 3 listings
-curl -X POST http://localhost:8081/api/listings/compare \
-  -H "Content-Type: application/json" -d '{"ids":[1,2,3]}'
-
-# Make an offer, accept it (listing -> RESERVEE), mark the listing as sold
-curl -X POST http://localhost:8081/api/listings/4/offers \
-  -H "Content-Type: application/json" \
-  -d '{"acheteurId":21,"montant":45000,"message":"Disponible ce week-end ?"}'
-curl -X PUT http://localhost:8081/api/offers/1/decision \
-  -H "Content-Type: application/json" -d '{"decision":"ACCEPTEE"}'
-curl -X PUT http://localhost:8081/api/listings/4/sold
-
-# Favorites
-curl -X POST http://localhost:8081/api/listings/1/favorites \
-  -H "Content-Type: application/json" -d '{"userId":21}'
-curl -X DELETE "http://localhost:8081/api/listings/1/favorites?userId=21"
+# Delete -> 204
+curl -X DELETE http://localhost:8081/api/listings/1
 ```
+
+## Eureka client
+
+```properties
+eureka.client.service-url.defaultZone=http://localhost:8761/eureka,http://localhost:8762/eureka
+eureka.client.register-with-eureka=true
+eureka.client.fetch-registry=true
+eureka.instance.prefer-ip-address=true
+eureka.instance.instance-id=${spring.application.name}:${server.port}
+```
+
+The service registers with the first Eureka server that answers; the two servers copy the
+registration to each other. `instance-id` contains the port, so two instances do not overwrite
+each other in the registry.
 
 ## Actuator
 
@@ -257,28 +250,26 @@ database is down, the instance is shown as `DOWN` on the dashboards instead of `
 
 ## Screenshots
 
-Take these with both Eureka peers and both instances (8081 and 8091) running.
+Take these with both Eureka servers and both instances (8081 and 8091) running.
 
 | # | What to capture | URL |
 |---|-----------------|-----|
-| 1 | Eureka peer 1 with 2 instances of `VEHICLE-SALES-SERVICE` | http://localhost:8761/ |
-| 2 | Eureka peer 2 with 2 instances of `VEHICLE-SALES-SERVICE` | http://localhost:8762/ |
+| 1 | Eureka server 1 with 2 instances of `VEHICLE-SALES-SERVICE` | http://localhost:8761/ |
+| 2 | Eureka server 2 with 2 instances of `VEHICLE-SALES-SERVICE` | http://localhost:8762/ |
 | 3 | Health, status `UP` with details | http://localhost:8081/actuator/health |
 | 4 | Info | http://localhost:8081/actuator/info |
 | 5 | Metrics list | http://localhost:8081/actuator/metrics |
 | 6 | HTTP request metric | http://localhost:8081/actuator/metrics/http.server.requests |
 | 7 | Loggers | http://localhost:8081/actuator/loggers |
-| 8 | Swagger UI | http://localhost:8081/swagger-ui.html |
-| 9 | Second instance answering | http://localhost:8091/api/listings/hello |
-| 10 | DB-down test, health `DOWN` | http://localhost:8081/actuator/health |
-| 11 | DB-down test, instances `DOWN` in Eureka | http://localhost:8761/ |
+| 8 | DB-down test, health `DOWN` | http://localhost:8081/actuator/health |
+| 9 | DB-down test, instances `DOWN` in Eureka | http://localhost:8761/ |
 
-DB-down test (screenshots 10 and 11):
+DB-down test (screenshots 8 and 9):
 
 1. With everything running, stop MySQL in the XAMPP control panel.
-2. Open http://localhost:8081/actuator/health: `status` is `DOWN` and the `db` component is `DOWN`
-   (the page can take up to 30 s to answer while the connection pool times out).
-3. Wait about 30 s to 1 min, then refresh http://localhost:8761/: the instances of
+2. Open http://localhost:8081/actuator/health: `status` is `DOWN` and the `db` component is `DOWN`.
+   The page can take up to 30 s to answer.
+3. Wait about 1 min, then refresh http://localhost:8761/: the instances of
    `VEHICLE-SALES-SERVICE` are listed as `DOWN`.
 4. Start MySQL again: health returns to `UP`, and so does Eureka after about 30 s.
 
@@ -286,17 +277,17 @@ DB-down test (screenshots 10 and 11):
 
 ```
 src/main/java/tn/esprit/autoworld/vehiclesales/
-  entity/       JPA entities and enums
-  repository/   Spring Data repositories and the listing filter
-  dto/          request and response records
-  mapper/       entity <-> DTO conversions
-  service/      interfaces, impl/ holds the business rules
-  controller/   REST controllers
-  exception/    exceptions and GlobalExceptionHandler (400 / 404 / 409)
-  config/       DataSeeder (3 sample listings)
-postman_collection.json   every endpoint, ready to import
-.run/                     IntelliJ run configurations for 8081 and 8091
+  entity/       the 5 JPA entities and their enums
+  repository/   Spring Data JPA repositories
+  service/      AnnonceVenteService, impl/ holds its implementation
+  controller/   AnnonceVenteController (CRUD + hello)
+  exception/    ResourceNotFoundException and GlobalExceptionHandler (400 / 404)
+src/main/resources/application.properties   database, Eureka and Actuator settings
+postman_collection.json                     the CRUD and hello requests
+.run/                                       IntelliJ run configurations for 8081 and 8091
 ```
+
+A request goes controller → service → repository → database.
 
 ## Troubleshooting
 

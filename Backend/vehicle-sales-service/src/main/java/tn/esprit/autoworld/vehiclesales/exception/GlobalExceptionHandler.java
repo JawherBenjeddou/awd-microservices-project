@@ -1,82 +1,49 @@
 package tn.esprit.autoworld.vehiclesales.exception;
 
-import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
-import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
-
-import jakarta.servlet.http.HttpServletRequest;
-import tn.esprit.autoworld.vehiclesales.dto.ErrorResponse;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+	/** Unknown id -> 404. */
 	@ExceptionHandler(ResourceNotFoundException.class)
-	public ResponseEntity<ErrorResponse> handleNotFound(ResourceNotFoundException ex, HttpServletRequest request) {
-		return build(HttpStatus.NOT_FOUND, ex.getMessage(), request, null);
+	@ResponseStatus(HttpStatus.NOT_FOUND)
+	public Map<String, Object> handleNotFound(ResourceNotFoundException ex) {
+		return body(HttpStatus.NOT_FOUND, ex.getMessage());
 	}
 
-	@ExceptionHandler(ConflictException.class)
-	public ResponseEntity<ErrorResponse> handleConflict(ConflictException ex, HttpServletRequest request) {
-		return build(HttpStatus.CONFLICT, ex.getMessage(), request, null);
-	}
-
-	/** Last line of defence for unique constraints, e.g. the same favorite added twice at the same time. */
-	@ExceptionHandler(DataIntegrityViolationException.class)
-	public ResponseEntity<ErrorResponse> handleDataIntegrity(DataIntegrityViolationException ex,
-			HttpServletRequest request) {
-		return build(HttpStatus.CONFLICT, "The request conflicts with existing data", request, null);
-	}
-
-	@ExceptionHandler(BadRequestException.class)
-	public ResponseEntity<ErrorResponse> handleBadRequest(BadRequestException ex, HttpServletRequest request) {
-		return build(HttpStatus.BAD_REQUEST, ex.getMessage(), request, null);
-	}
-
-	/** @Valid failures on a request body: one entry per invalid field. */
+	/** @Valid failed -> 400 with one message per invalid field. */
 	@ExceptionHandler(MethodArgumentNotValidException.class)
-	public ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException ex,
-			HttpServletRequest request) {
+	@ResponseStatus(HttpStatus.BAD_REQUEST)
+	public Map<String, Object> handleValidation(MethodArgumentNotValidException ex) {
 		Map<String, String> fieldErrors = new LinkedHashMap<>();
 		ex.getBindingResult().getFieldErrors()
 				.forEach(error -> fieldErrors.putIfAbsent(error.getField(), error.getDefaultMessage()));
-		return build(HttpStatus.BAD_REQUEST, "Validation failed", request, fieldErrors);
+		Map<String, Object> body = body(HttpStatus.BAD_REQUEST, "Validation failed");
+		body.put("fieldErrors", fieldErrors);
+		return body;
 	}
 
-	/** Missing or malformed JSON body, or an unknown enum value. */
+	/** Missing or malformed JSON, or an unknown enum value -> 400. */
 	@ExceptionHandler(HttpMessageNotReadableException.class)
-	public ResponseEntity<ErrorResponse> handleUnreadableBody(HttpMessageNotReadableException ex,
-			HttpServletRequest request) {
-		return build(HttpStatus.BAD_REQUEST, "Request body is missing or malformed", request, null);
+	@ResponseStatus(HttpStatus.BAD_REQUEST)
+	public Map<String, Object> handleUnreadableBody(HttpMessageNotReadableException ex) {
+		return body(HttpStatus.BAD_REQUEST, "Request body is missing or malformed");
 	}
 
-	/** A path variable or query parameter of the wrong type, e.g. statut=FOO or id=abc. */
-	@ExceptionHandler(MethodArgumentTypeMismatchException.class)
-	public ResponseEntity<ErrorResponse> handleTypeMismatch(MethodArgumentTypeMismatchException ex,
-			HttpServletRequest request) {
-		return build(HttpStatus.BAD_REQUEST, "Invalid value for parameter '" + ex.getName() + "'", request, null);
-	}
-
-	@ExceptionHandler(MissingServletRequestParameterException.class)
-	public ResponseEntity<ErrorResponse> handleMissingParameter(MissingServletRequestParameterException ex,
-			HttpServletRequest request) {
-		return build(HttpStatus.BAD_REQUEST, "Missing required parameter '" + ex.getParameterName() + "'", request,
-				null);
-	}
-
-	private ResponseEntity<ErrorResponse> build(HttpStatus status, String message, HttpServletRequest request,
-			Map<String, String> fieldErrors) {
-		ErrorResponse body = new ErrorResponse(LocalDateTime.now(), status.value(), status.getReasonPhrase(), message,
-				request.getRequestURI(), fieldErrors);
-		return ResponseEntity.status(status).body(body);
+	private Map<String, Object> body(HttpStatus status, String message) {
+		Map<String, Object> body = new LinkedHashMap<>();
+		body.put("status", status.value());
+		body.put("error", status.getReasonPhrase());
+		body.put("message", message);
+		return body;
 	}
 }

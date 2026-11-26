@@ -1,9 +1,6 @@
 package tn.esprit.autoworld.vehiclesales.entity;
 
-/**
- * Life cycle of a listing: BROUILLON -> PUBLIEE -> RESERVEE -> VENDUE.
- * RETIREE is for a listing withdrawn by its seller.
- */
+/** Status of a listing. A plain field: no transition rule is enforced. */
 public enum StatutAnnonce {
 	BROUILLON,
 	PUBLIEE,
