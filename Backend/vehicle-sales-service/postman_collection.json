@@ -1,0 +1,301 @@
+{
+  "info": {
+    "name": "AutoWorld - MS1 vehicle-sales-service",
+    "description": "All endpoints of MS1 (Vente de vehicules). Set the collection variable baseUrl to http://localhost:8091 to call the second instance. The ids in the variables match the sample data inserted at first startup; run the requests top to bottom for a full scenario.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8081" },
+    { "key": "listingId", "value": "3" },
+    { "key": "offerId", "value": "1" },
+    { "key": "userId", "value": "21" }
+  ],
+  "item": [
+    {
+      "name": "Listings (CRUD)",
+      "item": [
+        {
+          "name": "Hello (which instance answered)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/listings/hello"
+          }
+        },
+        {
+          "name": "Create listing",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  pm.collectionVariables.set('listingId', pm.response.json().id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vendeurId\": 7,\n  \"titre\": \"Renault Clio 5 - tres bon etat\",\n  \"description\": \"Premiere main, entretien a jour\",\n  \"prix\": 48500,\n  \"negociable\": true,\n  \"vehicule\": {\n    \"marque\": \"Renault\",\n    \"modele\": \"Clio 5\",\n    \"annee\": 2020,\n    \"kilometrage\": 61000,\n    \"carburant\": \"ESSENCE\"\n  }\n}"
+            },
+            "url": "{{baseUrl}}/api/listings"
+          }
+        },
+        {
+          "name": "Create listing - invalid body (400)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titre\": \"\",\n  \"prix\": -5,\n  \"vehicule\": { \"marque\": \"Renault\", \"annee\": 1500 }\n}"
+            },
+            "url": "{{baseUrl}}/api/listings"
+          }
+        },
+        {
+          "name": "List listings",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/listings"
+          }
+        },
+        {
+          "name": "List listings - filtered",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/listings?marque=Peugeot&prixMin=50000&prixMax=60000&statut=PUBLIEE",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "listings"],
+              "query": [
+                { "key": "marque", "value": "Peugeot" },
+                { "key": "prixMin", "value": "50000" },
+                { "key": "prixMax", "value": "60000" },
+                { "key": "statut", "value": "PUBLIEE" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get listing",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/listings/{{listingId}}"
+          }
+        },
+        {
+          "name": "Get listing - unknown id (404)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/listings/999999"
+          }
+        },
+        {
+          "name": "Update listing",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vendeurId\": 7,\n  \"titre\": \"Renault Clio 5 - prix revu\",\n  \"description\": \"Premiere main, entretien a jour\",\n  \"prix\": 47000,\n  \"negociable\": false,\n  \"vehicule\": {\n    \"marque\": \"Renault\",\n    \"modele\": \"Clio 5\",\n    \"annee\": 2020,\n    \"kilometrage\": 61500,\n    \"carburant\": \"ESSENCE\"\n  }\n}"
+            },
+            "url": "{{baseUrl}}/api/listings/{{listingId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Publication and photos",
+      "item": [
+        {
+          "name": "Publish listing (BROUILLON -> PUBLIEE)",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/api/listings/{{listingId}}/publish"
+          }
+        },
+        {
+          "name": "Add photo",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"url\": \"https://placehold.co/800x600?text=Photo\",\n  \"ordre\": 1,\n  \"principale\": true\n}"
+            },
+            "url": "{{baseUrl}}/api/listings/{{listingId}}/photos"
+          }
+        },
+        {
+          "name": "Compare listings (max 3)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ids\": [1, 2, 3]\n}"
+            },
+            "url": "{{baseUrl}}/api/listings/compare"
+          }
+        },
+        {
+          "name": "Compare listings - 4 ids (400)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ids\": [1, 2, 3, 4]\n}"
+            },
+            "url": "{{baseUrl}}/api/listings/compare"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Offers",
+      "item": [
+        {
+          "name": "Make offer (listing must be PUBLIEE)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  pm.collectionVariables.set('offerId', pm.response.json().id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"acheteurId\": 21,\n  \"montant\": 45000,\n  \"message\": \"Disponible ce week-end ?\"\n}"
+            },
+            "url": "{{baseUrl}}/api/listings/{{listingId}}/offers"
+          }
+        },
+        {
+          "name": "Accept offer (listing -> RESERVEE, other pending offers -> REFUSEE)",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"decision\": \"ACCEPTEE\"\n}"
+            },
+            "url": "{{baseUrl}}/api/offers/{{offerId}}/decision"
+          }
+        },
+        {
+          "name": "Refuse offer",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"decision\": \"REFUSEE\"\n}"
+            },
+            "url": "{{baseUrl}}/api/offers/{{offerId}}/decision"
+          }
+        },
+        {
+          "name": "Mark listing as sold (RESERVEE -> VENDUE)",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/api/listings/{{listingId}}/sold"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Favorites",
+      "item": [
+        {
+          "name": "Add favorite",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": {{userId}}\n}"
+            },
+            "url": "{{baseUrl}}/api/listings/{{listingId}}/favorites"
+          }
+        },
+        {
+          "name": "Remove favorite",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/api/listings/{{listingId}}/favorites?userId={{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "listings", "{{listingId}}", "favorites"],
+              "query": [{ "key": "userId", "value": "{{userId}}" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delete",
+      "item": [
+        {
+          "name": "Delete listing",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/listings/{{listingId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Actuator",
+      "item": [
+        {
+          "name": "Health",
+          "request": { "method": "GET", "url": "{{baseUrl}}/actuator/health" }
+        },
+        {
+          "name": "Info",
+          "request": { "method": "GET", "url": "{{baseUrl}}/actuator/info" }
+        },
+        {
+          "name": "Metrics",
+          "request": { "method": "GET", "url": "{{baseUrl}}/actuator/metrics" }
+        },
+        {
+          "name": "Metrics - http.server.requests",
+          "request": { "method": "GET", "url": "{{baseUrl}}/actuator/metrics/http.server.requests" }
+        },
+        {
+          "name": "Loggers",
+          "request": { "method": "GET", "url": "{{baseUrl}}/actuator/loggers" }
+        },
+        {
+          "name": "Loggers - set service log level to DEBUG",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"configuredLevel\": \"DEBUG\"\n}"
+            },
+            "url": "{{baseUrl}}/actuator/loggers/tn.esprit.autoworld.vehiclesales"
+          }
+        }
+      ]
+    }
+  ]
+}
