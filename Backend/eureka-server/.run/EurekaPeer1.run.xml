@@ -1,0 +1,11 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="EurekaPeer1" type="Application" factoryName="Application">
+    <option name="MAIN_CLASS_NAME" value="tn.esprit.autoworld.eureka.EurekaServerApplication" />
+    <module name="eureka-server" />
+    <option name="VM_PARAMETERS" value="-Dspring.profiles.active=peer1" />
+    <option name="WORKING_DIRECTORY" value="$MODULE_WORKING_DIR$" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>
