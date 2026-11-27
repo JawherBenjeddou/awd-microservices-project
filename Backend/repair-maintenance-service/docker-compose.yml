@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: autoworld-ms3-postgres
+    environment:
+      POSTGRES_DB: autoworld_repair
+      POSTGRES_USER: autoworld
+      POSTGRES_PASSWORD: autoworld
+    ports:
+      - "5432:5432"
+    volumes:
+      - autoworld_ms3_pgdata:/var/lib/postgresql/data
+
+volumes:
+  autoworld_ms3_pgdata:
