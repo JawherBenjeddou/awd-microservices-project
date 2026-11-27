@@ -1,0 +1,27 @@
+# Maven
+target/
+!**/src/main/**/target/
+!**/src/test/**/target/
+.mvn/wrapper/maven-wrapper.jar
+
+# IntelliJ IDEA (shared run configurations in .run/ are kept)
+.idea/
+*.iml
+*.iws
+*.ipr
+!.run/
+
+# Node.js
+node_modules/
+npm-debug.log*
+.env
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
