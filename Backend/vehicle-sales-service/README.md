@@ -193,6 +193,20 @@ Both dashboards (http://localhost:8761/ and http://localhost:8762/) then show
 `VEHICLE-SALES-SERVICE` with two instances: `vehicle-sales-service:8081` and
 `vehicle-sales-service:8091`. Allow about 30 s for both dashboards to show them.
 
+## Through the API gateway
+
+The gateway (port 8080) exposes this service under the `/vehicle-sales` prefix and load-balances
+between its instances. The prefix is removed before the request reaches the service:
+
+| Through the gateway | Reaches MS1 as |
+|---------------------|----------------|
+| `http://localhost:8080/vehicle-sales/api/listings` | `/api/listings` |
+| `http://localhost:8080/vehicle-sales/v3/api-docs`  | `/v3/api-docs` |
+
+`server.forward-headers-strategy=framework` makes the service read the `X-Forwarded-*` headers
+sent by the gateway, so the OpenAPI document served through the gateway gives the gateway address
+as server URL. Details: [../api-gateway/README.md](../api-gateway/README.md).
+
 ## curl examples
 
 Written for macOS / Linux / Git Bash. On Windows cmd, import `postman_collection.json` into

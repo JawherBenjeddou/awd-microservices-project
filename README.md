@@ -30,17 +30,20 @@ Repository name convention: `autoworld-<classe>-<groupe>`.
 | MS4 Pièces           | `Backend/spare-parts-service`            | Spring Boot          | 8084 | 8094         |
 | MS5 Profils          | `Backend/profiles-professionals-service` | Spring Boot          | 8085 | 8095         |
 | MS6 Interactions     | `Backend/interaction-service`            | Node.js + Express    | 8086 | 8096         |
-| API gateway          | `Backend/api-gateway`                    | Spring Cloud Gateway | —    | —            |
+| API gateway          | `Backend/api-gateway`                    | Spring Cloud Gateway | 8080 | —            |
 | Config server        | `Backend/config-server`                  | Spring Cloud Config  | —    | —            |
 
-A second instance of a service always runs on its port + 10. The API gateway and config server
-are not created yet.
+A second instance of a service always runs on its port + 10. The config server is not created
+yet. The API gateway is the single entry point: clients call `http://localhost:8080/<prefix>/...`
+and it forwards to an instance found in Eureka. Routes, Swagger portal and load balancing:
+[Backend/api-gateway/README.md](Backend/api-gateway/README.md).
 
 ## Repository layout
 
 ```
 Backend/
   eureka-server/                    service registry (2 peers)
+  api-gateway/                      single entry point (port 8080)
   vehicle-sales-service/            MS1
   vehicle-rental-service/           MS2
   repair-maintenance-service/       MS3
@@ -62,6 +65,7 @@ Startup order:
 2. Eureka peer 1 — `Backend/eureka-server/start-peer1.cmd` (or `./start-peer1.sh`)
 3. Eureka peer 2 — `Backend/eureka-server/start-peer2.cmd` (or `./start-peer2.sh`)
 4. The microservices, in any order
+5. API gateway — `./mvnw spring-boot:run` in `Backend/api-gateway`
 
 Details, client configuration and troubleshooting: [Backend/eureka-server/README.md](Backend/eureka-server/README.md).
 
