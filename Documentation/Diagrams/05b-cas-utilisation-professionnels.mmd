@@ -1,0 +1,56 @@
+---
+title: AutoWorld — cas d'utilisation (professionnels et administration)
+---
+flowchart LR
+    CO["Acteur<br/><b>Concessionnaire</b>"]
+    AG["Acteur<br/><b>Agence de location</b>"]
+    GA["Acteur<br/><b>Garagiste</b>"]
+    FO["Acteur<br/><b>Fournisseur de pièces</b>"]
+    AD["Acteur<br/><b>Administrateur</b>"]
+
+    subgraph SYS["Plateforme AutoWorld"]
+        direction TB
+        subgraph M5["Profils & Professionnels"]
+            P1(["Gérer son profil professionnel et son entreprise"])
+            P2(["Valider un compte professionnel"])
+            P3(["Suspendre / réactiver une entreprise"])
+        end
+        subgraph M1["Vente de véhicules"]
+            P4(["Publier et gérer des annonces"])
+            P5(["Traiter les demandes d'achat"])
+        end
+        subgraph M2["Location de véhicules"]
+            P6(["Gérer la flotte et les offres"])
+            P7(["Gérer disponibilités et réservations"])
+        end
+        subgraph M3["Réparation & Entretien"]
+            P8(["Publier des prestations"])
+            P9(["Établir un devis / planifier un rendez-vous"])
+        end
+        subgraph M4["Pièces détachées"]
+            P10(["Gérer le catalogue et le stock"])
+            P11(["Traiter les commandes"])
+        end
+        P12(["Gérer les catégories et référentiels"])
+    end
+
+    CO --- P1
+    AG --- P1
+    GA --- P1
+    FO --- P1
+    CO --- P4
+    CO --- P5
+    AG --- P6
+    AG --- P7
+    GA --- P8
+    GA --- P9
+    FO --- P10
+    FO --- P11
+    AD --- P2
+    AD --- P3
+    AD --- P12
+
+    classDef actor fill:#fef3c7,stroke:#b45309,color:#0f172a
+    classDef uc fill:#dbeafe,stroke:#1d4ed8,color:#0f172a
+    class CO,AG,GA,FO,AD actor
+    class P1,P2,P3,P4,P5,P6,P7,P8,P9,P10,P11,P12 uc

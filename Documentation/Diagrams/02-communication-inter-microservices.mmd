@@ -1,0 +1,29 @@
+---
+title: AutoWorld — communication inter-microservices (prévue)
+---
+flowchart LR
+    S1["vehicle-sales-service"]
+    S2["vehicle-rental-service"]
+    S3["repair-maintenance-service"]
+    S4["spare-parts-service"]
+    S5["profiles-professionals-service"]
+    MQ{{"RabbitMQ<br/>exchange autoworld.profiles"}}
+
+    S1 -- "C1 · OpenFeign (sync)<br/>vendeur + concession" --> S5
+    S2 -- "C2 · OpenFeign (sync)<br/>agence de location" --> S5
+    S3 -- "C3 · OpenFeign (sync)<br/>garage · garages à proximité" --> S5
+    S4 -- "C4 · OpenFeign (sync)<br/>fournisseur" --> S5
+    S3 -- "C5 · OpenFeign (sync)<br/>pièces compatibles + stock" --> S4
+
+    S5 -. "A1 · publie BusinessStatusChanged" .-> MQ
+    MQ -. "A1 · consomme" .-> S1
+    MQ -. "A1 · consomme" .-> S2
+    MQ -. "A1 · consomme" .-> S3
+    MQ -. "A1 · consomme" .-> S4
+
+    classDef svc fill:#dbeafe,stroke:#1d4ed8,color:#0f172a
+    classDef ref fill:#ede9fe,stroke:#6d28d9,color:#0f172a
+    classDef mq fill:#fef3c7,stroke:#b45309,color:#0f172a
+    class S1,S2,S3,S4 svc
+    class S5 ref
+    class MQ mq

@@ -1,0 +1,78 @@
+{
+  "info": {
+    "name": "AutoWorld - MS1 vehicle-sales-service",
+    "description": "CRUD on sale listings and the hello endpoint of MS1. Set the collection variable baseUrl to http://localhost:8091 to call the second instance. Run \"Create listing\" first: it stores the new id in listingId for the other requests.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8081" },
+    { "key": "listingId", "value": "1" }
+  ],
+  "item": [
+    {
+      "name": "Hello (which instance answered)",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/listings/hello"
+      }
+    },
+    {
+      "name": "Create listing",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (pm.response.code === 201) {",
+              "  pm.collectionVariables.set('listingId', pm.response.json().id);",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"vendeurId\": 7,\n  \"titre\": \"Renault Clio 5 - tres bon etat\",\n  \"description\": \"Premiere main\",\n  \"prix\": 48500,\n  \"negociable\": true,\n  \"vehicule\": {\n    \"marque\": \"Renault\",\n    \"modele\": \"Clio 5\",\n    \"annee\": 2020,\n    \"kilometrage\": 61000,\n    \"carburant\": \"ESSENCE\"\n  }\n}"
+        },
+        "url": "{{baseUrl}}/api/listings"
+      }
+    },
+    {
+      "name": "List listings",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/listings"
+      }
+    },
+    {
+      "name": "Get listing",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/listings/{{listingId}}"
+      }
+    },
+    {
+      "name": "Update listing",
+      "request": {
+        "method": "PUT",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"vendeurId\": 7,\n  \"titre\": \"Renault Clio 5 - prix revu\",\n  \"description\": \"Premiere main\",\n  \"prix\": 47000,\n  \"negociable\": false,\n  \"statut\": \"PUBLIEE\",\n  \"vehicule\": {\n    \"marque\": \"Renault\",\n    \"modele\": \"Clio 5\",\n    \"annee\": 2020,\n    \"kilometrage\": 61500,\n    \"carburant\": \"ESSENCE\"\n  }\n}"
+        },
+        "url": "{{baseUrl}}/api/listings/{{listingId}}"
+      }
+    },
+    {
+      "name": "Delete listing",
+      "request": {
+        "method": "DELETE",
+        "url": "{{baseUrl}}/api/listings/{{listingId}}"
+      }
+    }
+  ]
+}

@@ -1,0 +1,53 @@
+---
+title: AutoWorld — cas d'utilisation (visiteurs et clients)
+---
+flowchart LR
+    V["Acteur<br/><b>Visiteur</b>"]
+    C["Acteur<br/><b>Client</b><br/>(utilisateur inscrit)"]
+    KC["Acteur système<br/><b>Keycloak</b>"]
+
+    subgraph SYS["Plateforme AutoWorld"]
+        direction TB
+        subgraph M5["Profils & Professionnels"]
+            U1(["Créer un compte / s'authentifier"])
+            U2(["Gérer son profil"])
+            U3(["Découvrir les professionnels à proximité"])
+        end
+        subgraph M1["Vente de véhicules"]
+            U4(["Rechercher et consulter des véhicules"])
+            U5(["Publier une annonce (particulier)"])
+            U6(["Envoyer une demande d'achat"])
+        end
+        subgraph M2["Location de véhicules"]
+            U7(["Consulter les offres et disponibilités"])
+            U8(["Réserver un véhicule"])
+        end
+        subgraph M3["Réparation & Entretien"]
+            U9(["Trouver un garage et ses prestations"])
+            U10(["Demander une réparation / un rendez-vous"])
+        end
+        subgraph M4["Pièces détachées"]
+            U11(["Rechercher des pièces compatibles"])
+            U12(["Commander des pièces"])
+        end
+    end
+
+    C -. "spécialise" .-> V
+    V --- U1
+    V --- U3
+    V --- U4
+    V --- U7
+    V --- U9
+    V --- U11
+    C --- U2
+    C --- U5
+    C --- U6
+    C --- U8
+    C --- U10
+    C --- U12
+    U1 --- KC
+
+    classDef actor fill:#fef3c7,stroke:#b45309,color:#0f172a
+    classDef uc fill:#dbeafe,stroke:#1d4ed8,color:#0f172a
+    class V,C,KC actor
+    class U1,U2,U3,U4,U5,U6,U7,U8,U9,U10,U11,U12 uc
